@@ -103,14 +103,14 @@ export async function POST(req: NextRequest) {
       variables,
     } = body;
 
-    if (!smtpId || !from || !to) {
+    if (!from || !to) {
       return NextResponse.json(
         { error: "Missing required fields", code: "missing_required_fields" },
         { status: 400, headers: rateHeaders },
       );
     }
 
-    if (!templateId && !templateKey && (!subject || !html)) {
+    if (!templateId && !templateKey && (!subject || (!html && !text))) {
       return NextResponse.json(
         {
           error: "Missing email content",
