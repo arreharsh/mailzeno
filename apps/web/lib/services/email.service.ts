@@ -188,7 +188,7 @@ export async function sendEmailService(input: SendEmailInput) {
       to: input.to,
       subject: finalSubject,
       html: finalHtml,
-      text: template ? undefined : input.text,
+      text: input.text,
     });
 
     // Log the email with retention policy
