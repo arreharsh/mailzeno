@@ -13,6 +13,7 @@ export interface SMTPAccount {
   from_email: string;
   from_name: string;
   is_active: boolean;
+  is_default: boolean;
   created_at: string;
 }
 

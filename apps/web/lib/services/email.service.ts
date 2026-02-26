@@ -5,7 +5,7 @@ import { PLAN_CONFIG } from "@/lib/plans";
 
 interface SendEmailInput {
   userId: string;
-  smtpId: string;
+  smtpId?: string;
   from: string;
   to: string | string[];
   subject?: string;
@@ -48,15 +48,41 @@ export async function sendEmailService(input: SendEmailInput) {
 
   try {
     // Get SMTP config and validate ownership
-    const { data: smtp } = await supabase
-      .from("smtp_accounts")
-      .select("*")
-      .eq("id", input.smtpId)
-      .eq("user_id", input.userId)
-      .single();
+    let smtp: any = null;
 
-    if (!smtp) {
-      return { success: false, error: "SMTP account not found" };
+    if (input.smtpId) {
+      // Specific SMTP requested
+      const { data } = await supabase
+        .from("smtp_accounts")
+        .select("*")
+        .eq("id", input.smtpId)
+        .eq("user_id", input.userId)
+        .eq("is_active", true)
+        .single();
+
+      smtp = data;
+
+      if (!smtp) {
+        return { success: false, error: "SMTP account not found or inactive" };
+      }
+    } else {
+      // Fallback to default SMTP
+      const { data } = await supabase
+        .from("smtp_accounts")
+        .select("*")
+        .eq("user_id", input.userId)
+        .eq("is_default", true)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      smtp = data;
+
+      if (!smtp) {
+        return {
+          success: false,
+          error: "No default SMTP configured. Please add one.",
+        };
+      }
     }
 
     // For security, enforce that the "from" address matches the SMTP username
@@ -115,33 +141,6 @@ export async function sendEmailService(input: SendEmailInput) {
         error: "Provide template OR subject + html/text",
       };
     }
-
-    //-----------------------------------------------//
-
-    // Pre check limits before sending
-
-    // const plan = PLAN_CONFIG[input.plan];
-
-    // const { data: usage, error: usageError } = await supabase.rpc(
-    //   "get_daily_usage",
-    //   { user_id_input: input.userId },
-    // );
-
-    // if (usageError) {
-    //   console.error("[USAGE RPC ERROR]", usageError);
-    //   return { success: false, error: "Usage check failed" };
-    // }
-
-    // const currentUsage = usage ?? 0;
-
-    // if (currentUsage >= plan.dailyLimit) {
-    //   return {
-    //     success: false,
-    //     error: "Daily email limit reached",
-    //   };
-    // }
-
-    //------------------------------------------------------------//
 
     // Atomic daily usage check + increment
     const plan = PLAN_CONFIG[input.plan];
@@ -208,7 +207,7 @@ export async function sendEmailService(input: SendEmailInput) {
 
     await supabase.from("emails_log").insert({
       user_id: input.userId,
-      smtp_id: input.smtpId,
+      smtp_id: smtp.id,
       to_email: Array.isArray(input.to) ? input.to.join(",") : input.to,
       subject: finalSubject,
       html: safeHtml ?? null,
@@ -219,10 +218,6 @@ export async function sendEmailService(input: SendEmailInput) {
       retention_expires_at: retentionExpiresAt.toISOString(),
     });
 
-    // Increment usage count
-    // await supabase.rpc("increment_usage", {
-    //   user_id_input: input.userId,
-    // });
 
     return {
       success: true,

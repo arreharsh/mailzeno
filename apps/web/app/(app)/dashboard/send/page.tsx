@@ -71,7 +71,7 @@ export default function SendEmailPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p- md:p-8 max-w-5xl mx-auto space-y-8">
      <button
         onClick={() => router.back()}
         className="flex items-center pt-0 pb-4 gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition"

@@ -175,7 +175,7 @@ export default function MessageEditor({
   };
 
   return (
-    <div className="border rounded-xl p-6 space-y-6 bg-card shadow-sm">
+    <div className="border rounded-xl p-4 space-y-6 bg-card shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <label className="text-sm font-medium">
           Message <span className="text-red-500">*</span>
