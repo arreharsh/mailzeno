@@ -1,10 +1,7 @@
 {
   "name": "mailzeno",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+ 
   "scripts": {
     "dev": "npm run dev --workspace=web",
     "build": "npm run build --workspace=web",
