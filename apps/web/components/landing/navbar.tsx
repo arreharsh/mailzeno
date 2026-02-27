@@ -63,7 +63,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 backdrop-blur md:border-b ">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6 ">
         {/* Logo */}
-        <Link href="/" className="flex items-center text-2xl font-bold">
+        <Link href="/" className="flex items-center text-2xl font-extrabold">
           <img src="/logo.svg" alt="Logo" className="h-12" />
           mailzeno
         </Link>

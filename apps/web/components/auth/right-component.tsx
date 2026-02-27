@@ -45,7 +45,7 @@ export function RightComponent({ testimonials }: Props) {
       <div className="max-w-xl relative">
         <Quote className="absolute rotate-180 -left-16 -top-10 h-16 w-16 text-muted-foreground/20" />
 
-        <p className="text-4xl font-medium leading-tight">
+        <p className="text-4xl font-bold leading-tight">
           {testimonial.title}
         </p>
 

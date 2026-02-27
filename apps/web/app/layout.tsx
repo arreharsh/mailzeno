@@ -1,13 +1,21 @@
 import React from "react";
 import type { Metadata, Viewport } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import { Figtree, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
-const geistMono = Geist_Mono({ subsets: ["latin"] });
+const figtree = Figtree({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 export const metadata = {
   metadataBase: new URL("https://mailzeno.dev"),
   title: {
@@ -68,7 +76,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${figtree.className} ${geistMono.variable} font-medium antialiased`}>
         <ThemeProvider>
           {children}
           <Toaster />

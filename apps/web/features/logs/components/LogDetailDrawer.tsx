@@ -13,19 +13,21 @@ export function LogDetailDrawer({
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
+  
+
   if (!log) return null;
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex">
+      <div className="fixed inset-0 bg-black/10 backdrop-blur-sm z-50 !m-0 flex">
         {/* Backdrop */}
         <div
-          className="absolute inset-0 bg-black/10 backdrop-blur-sm"
+          className="absolute h-full inset-0 "
           onClick={onClose}
         />
 
         {/* Panel */}
-        <div className="relative ml-auto md:w-[480px] rounded-xl rounded-l bg-background h-full shadow-xl p-6 overflow-y-auto">
+        <div className="absolute right-0 top-0 h-full w-full md:w-[480px] bg-background shadow-xl p-6 overflow-y-auto rounded-l-2xl">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold">Email Details</h2>
             <button className="cursor-pointer hover:bg-primary rounded-md p-1" onClick={onClose}>
