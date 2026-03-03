@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, ArrowLeft, Send, AlertCircle } from "lucide-react";
+import { Loader2, Send, AlertCircle } from "lucide-react";
 import { useSendEmail } from "@/features/send-email/hooks/useSendEmail";
 import EmailFormSection from "@/features/send-email/components/EmailFormSection";
 import MessageEditor from "@/features/send-email/components/MessageEditor";
@@ -11,6 +11,7 @@ import SendEmailPageSkeleton from "@/features/send-email/components/SendEmailPag
 import { TemplateModal } from "@/components/TemplateModal";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
+import { BackButton } from "@/components/ui/back-button";
 
 export default function SendEmailPage() {
   const {
@@ -71,14 +72,8 @@ export default function SendEmailPage() {
   };
 
   return (
-    <div className="p- md:p-8 max-w-5xl mx-auto space-y-8">
-     <button
-        onClick={() => router.back()}
-        className="flex items-center pt-0 pb-4 gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition"
-      >
-        <ArrowLeft size={16} />
-        Back
-      </button>
+    <div className="md:p-8 max-w-5xl mx-auto space-y-8">
+      <BackButton />
 
       <div>
         <h1 className="text-2xl font-semibold">Send Email</h1>

@@ -1,30 +1,27 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { Button } from "@/components/ui/button";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Underline from "@tiptap/extension-underline";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
+import TextAlign from "@tiptap/extension-text-align";
+import Image from "@tiptap/extension-image";
+import Highlight from "@tiptap/extension-highlight";
+import FontFamily from "@tiptap/extension-font-family";
 import Editor from "@monaco-editor/react";
 import DOMPurify from "dompurify";
-import {
-  Bold,
-  Italic,
-  AlertTriangle,
-  Strikethrough,
-  Code as CodeInline,
-  List,
-  ListOrdered,
-  Heading1,
-  Heading2,
-  Undo,
-  Redo,
-  Link2,
-  Unlink,
-  Code,
-} from "lucide-react";
+
+// Sub-components
+import FontSize from "./extensions/FontSize";
+import { FormattingToolbar } from "./components/FormattingToolbar";
+import { MediaToolbar } from "./components/MediaToolbar";
+import { LinkDialog, ImageDialog, ModeWarningDialog } from "./components/EditorModals";
+
+/*  Props  */
 
 interface RichEditorProps {
   value: string;
@@ -33,8 +30,10 @@ interface RichEditorProps {
   readOnly?: boolean;
   showToolbar?: boolean;
   autoFocus?: boolean;
-  autoSaveDelay?: number; // ms
+  autoSaveDelay?: number;
 }
+
+/*  Main Component  */
 
 export default function RichEditor({
   value,
@@ -46,31 +45,47 @@ export default function RichEditor({
   autoSaveDelay,
 }: RichEditorProps) {
   const { theme } = useTheme();
+  const monacoRef = useRef<any>(null);
+
+  // Mode states
   const [htmlMode, setHtmlMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  // Dialog states
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
-  const [dirty, setDirty] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
   const [showModeWarning, setShowModeWarning] = useState(false);
 
-  /* ---------- Email-safe Sanitizer ---------- */
+  /*  Sanitizer  */
+  const sanitize = (html: string) =>
+    DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 
-  const sanitize = (html: string) => {
-    return DOMPurify.sanitize(html, {
-      USE_PROFILES: { html: true },
-    });
-  };
-
-  /* ---------- Editor Setup ---------- */
-
+  /*  Editor Setup  */
   const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
+      TextStyle,
+      Color,
+      FontSize,
+      FontFamily,
+      Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: "max-w-full h-auto rounded-lg",
+          draggable: "true",
+        },
+      }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class:
-            "text-blue-600 underline hover:text-blue-700 transition-colors",
+          class: "text-blue-600 underline hover:text-blue-700 transition-colors",
         },
       }),
     ],
@@ -86,356 +101,196 @@ export default function RichEditor({
       attributes: {
         class:
           "prose prose-sm dark:prose-invert max-w-none px-4 py-4 focus:outline-none " +
-          "[&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6",
+          "[&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 " +
+          "[&_img]:rounded-lg [&_img]:max-w-full [&_img]:h-auto [&_img]:my-3 [&_img]:cursor-move",
       },
-      handleDOMEvents: {
-        drop: (view, event) => {
-          event.preventDefault();
-          return true;
-        },
+      handleDrop: (view, event, _slice, moved) => {
+        if (!moved && event.dataTransfer?.files?.length) {
+          const file = event.dataTransfer.files[0];
+          if (file.type.startsWith("image/")) {
+            event.preventDefault();
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const base64 = e.target?.result as string;
+              const coords = view.posAtCoords({
+                left: event.clientX,
+                top: event.clientY,
+              });
+              if (coords) {
+                const node = view.state.schema.nodes.image.create({ src: base64 });
+                view.dispatch(view.state.tr.insert(coords.pos, node));
+              }
+            };
+            reader.readAsDataURL(file);
+            return true;
+          }
+        }
+        return false;
       },
     },
   });
 
-  /* ---------- Auto Focus ---------- */
-
+  /*  Auto Focus  */
   useEffect(() => {
-    if (autoFocus && editor) {
-      editor.commands.focus("end");
-    }
+    if (autoFocus && editor) editor.commands.focus("end");
   }, [editor, autoFocus]);
 
-  /* ---------- Sync External Value ---------- */
-
+  /*  Sync External Value  */
   useEffect(() => {
     if (!editor || htmlMode) return;
-
-    const current = editor.getHTML();
-    if (value !== current) {
+    if (value !== editor.getHTML()) {
       editor.commands.setContent(value);
       setDirty(false);
     }
   }, [value, editor, htmlMode]);
 
-  //   RiskyStyles
-
-  const hasRiskyStyles = (html: string) => {
-    const riskyPatterns = [
-      /style=/i,
-      /class=/i,
-      /<div/i,
-      /<table/i,
-      /<span/i,
-      /<font/i,
-    ];
-
-    return riskyPatterns.some((pattern) => pattern.test(html));
-  };
-
-  const handleToggleMode = () => {
-    if (htmlMode) {
-      // HTML → Visual
-      if (hasRiskyStyles(value)) {
-        setShowModeWarning(true);
-        return;
-      }
-    }
-
-    setHtmlMode((p) => !p);
-  };
-
-  /* ---------- Auto Save ---------- */
-
+  /*  Auto Save  */
   useEffect(() => {
     if (!autoSaveDelay || !dirty) return;
-
-    const timer = setTimeout(() => {
-      setDirty(false);
-    }, autoSaveDelay);
-
+    const timer = setTimeout(() => setDirty(false), autoSaveDelay);
     return () => clearTimeout(timer);
   }, [dirty, autoSaveDelay]);
 
-  /* ---------- Link Handling ---------- */
+  /*  Fullscreen body lock  */
+  useEffect(() => {
+    document.body.style.overflow = isFullscreen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isFullscreen]);
 
+  /*  Mode toggle logic  */
+  const hasRiskyStyles = (html: string) =>
+    [/style=/i, /class=/i, /<div/i, /<table/i, /<span/i, /<font/i].some((p) =>
+      p.test(html)
+    );
+
+  const handleToggleMode = () => {
+    if (htmlMode && hasRiskyStyles(value)) {
+      setShowModeWarning(true);
+      return;
+    }
+    setHtmlMode((p) => !p);
+  };
+
+  /*  Link handlers  */
   const applyLink = () => {
     if (!editor || !linkUrl) return;
-
     try {
       const url = linkUrl.startsWith("http") ? linkUrl : `https://${linkUrl}`;
       new URL(url);
-
       editor.chain().focus().setLink({ href: url }).run();
       setLinkOpen(false);
       setLinkUrl("");
-    } catch {
-      return;
-    }
+    } catch { /* invalid URL */ }
   };
 
-  const removeLink = () => {
-    editor?.chain().focus().unsetLink().run();
+  /*  Image handler  */
+  const insertImage = () => {
+    if (!editor || !imageUrl) return;
+    editor.chain().focus().setImage({ src: imageUrl }).run();
+    setShowImageDialog(false);
+    setImageUrl("");
   };
 
-  if (!editor) return <div>Loading editor...</div>;
+  /*  Loading state  */
+  if (!editor) {
+    return (
+      <div className="p-4 text-muted-foreground text-sm animate-pulse">
+        Loading editor...
+      </div>
+    );
+  }
+
+  /*  Render  */
+
+  const wrapperClass = isFullscreen
+    ? "fixed inset-0 z-[100] bg-background flex flex-col"
+    : "w-full relative";
 
   return (
-    <div className="w-full relative">
+    <div className={wrapperClass}>
       {/* Dirty indicator */}
-      {dirty && (
-        <div className="absolute right-3 top-2 text-xs text-muted-foreground">
+      {dirty && !isFullscreen && (
+        <div className="absolute right-3 top-2  text-xs text-muted-foreground flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
           Editing...
         </div>
       )}
 
       {/* Toolbar */}
       {!readOnly && showToolbar && (
-        <div className="flex items-center justify-between border-b p-2 bg-muted/30">
-          {/* LEFT SIDE - Formatting (Only Visual Mode) */}
-          {!htmlMode && (
-            <div className="flex flex-wrap gap-1">
-              <TB
-                onClick={() => editor.chain().focus().undo().run()}
-                icon={<Undo size={14} />}
-                disabled={!editor.can().undo()}
-              />
-              <TB
-                onClick={() => editor.chain().focus().redo().run()}
-                icon={<Redo size={14} />}
-                disabled={!editor.can().redo()}
-              />
+        <div className="relative z-11 border-b bg-muted/20 backdrop-blur-sm shrink-0">
+          {/* Row 1: Formatting */}
+          {!htmlMode && <FormattingToolbar editor={editor} />}
 
-              <Divider />
-
-              <TB
-                onClick={() =>
-                  editor.chain().focus().toggleHeading({ level: 1 }).run()
-                }
-                icon={<Heading1 size={14} />}
-                active={editor.isActive("heading", { level: 1 })}
-              />
-              <TB
-                onClick={() =>
-                  editor.chain().focus().toggleHeading({ level: 2 }).run()
-                }
-                icon={<Heading2 size={14} />}
-                active={editor.isActive("heading", { level: 2 })}
-              />
-
-              <Divider />
-
-              <TB
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                icon={<Bold size={14} />}
-                active={editor.isActive("bold")}
-              />
-              <TB
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                icon={<Italic size={14} />}
-                active={editor.isActive("italic")}
-              />
-              <TB
-                onClick={() => editor.chain().focus().toggleStrike().run()}
-                icon={<Strikethrough size={14} />}
-                active={editor.isActive("strike")}
-              />
-              <TB
-                onClick={() => editor.chain().focus().toggleCode().run()}
-                icon={<CodeInline size={14} />}
-                active={editor.isActive("code")}
-              />
-
-              <Divider />
-
-              <TB
-                onClick={() => editor.chain().focus().toggleBulletList().run()}
-                icon={<List size={14} />}
-                active={editor.isActive("bulletList")}
-              />
-              <TB
-                onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                icon={<ListOrdered size={14} />}
-                active={editor.isActive("orderedList")}
-              />
-
-              <Divider />
-
-              <TB
-                onClick={() => setLinkOpen(true)}
-                icon={<Link2 size={14} />}
-                active={editor.isActive("link")}
-              />
-
-              {editor.isActive("link") && (
-                <TB onClick={removeLink} icon={<Unlink size={14} />} />
-              )}
-            </div>
-          )}
-
-          {/* RIGHT SIDE - ALWAYS VISIBLE */}
-          <div>
-            <TB
-              onClick={handleToggleMode}
-              icon={<Code size={14} />}
-              active={htmlMode}
-            >
-              {htmlMode ? "Visual" : "HTML"}
-            </TB>
-          </div>
+          {/* Row 2: Media & Extras */}
+          <MediaToolbar
+            editor={editor}
+            htmlMode={htmlMode}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+            onToggleMode={handleToggleMode}
+            onOpenLink={() => setLinkOpen(true)}
+            onOpenImage={() => setShowImageDialog(true)}
+            onFormatCode={() => {
+              monacoRef.current?.getAction("editor.action.formatDocument")?.run();
+            }}
+          />
         </div>
       )}
 
-      {/* Editor Area */}
+      {/* Editor Area  */}
       {htmlMode ? (
-        <Editor
-          height={`${minHeight + 150}px`}
-          defaultLanguage="html"
-          theme={theme === "dark" ? "vs-dark" : "vs"}
-          value={value}
-          onChange={(v) => onChange(v || "")}
-          options={{
-            minimap: { enabled: false },
-            fontSize: 14,
-            wordWrap: "on",
-            scrollBeyondLastLine: false,
-          }}
-        />
+        <div className={isFullscreen ? "flex-1" : ""}>
+          <Editor
+            height={isFullscreen ? "100%" : `${minHeight + 150}px`}
+            defaultLanguage="html"
+            theme={theme === "dark" ? "vs-dark" : "vs"}
+            value={value}
+            onChange={(v) => onChange(v || "")}
+            onMount={(editor) => { monacoRef.current = editor; }}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+              wordWrap: "on",
+              scrollBeyondLastLine: false,
+              lineNumbers: "on",
+              bracketPairColorization: { enabled: true },
+              padding: { top: 12, bottom: 12 },
+            }}
+          />
+        </div>
       ) : (
-        <div style={{ minHeight }}>
+        <div
+          className={`overflow-y-auto ${isFullscreen ? "flex-1" : ""}`}
+          style={{ minHeight: isFullscreen ? undefined : minHeight }}
+        >
           <EditorContent editor={editor} />
         </div>
       )}
 
-      {/* Link Modal */}
-      {linkOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-xl p-6 w-full max-w-md border shadow-2xl">
-            <h3 className="text-base font-semibold mb-4">Insert Link</h3>
-
-            <input
-              type="url"
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://example.com"
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") applyLink();
-                if (e.key === "Escape") setLinkOpen(false);
-              }}
-            />
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setLinkOpen(false)}
-                className="px-4 py-2 border rounded-lg hover:bg-muted transition"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={applyLink}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
-              >
-                Insert
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showModeWarning && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          onClick={() => setShowModeWarning(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-[92%] sm:max-w-sm p-0 overflow-hidden rounded-lg bg-card border shadow-2xl"
-          >
-            {/* Header */}
-            <div className="px-5 py-4 border-b">
-              <h2 className="text-base font-semibold">
-                Switch to Editor Mode?
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                Some advanced HTML formatting may be lost.
-              </p>
-            </div>
-
-            {/* Body */}
-            <div className="flex gap-3 px-5 py-3 bg-red-500/10">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-red-500/30">
-            <AlertTriangle className="h-5 w-5 text-secondry-foreground" />
-          </div>
-
-          <p className="text-sm text-secondry-foreground leading-relaxed">
-            Editor mode does not fully support inline styles, tables or
-            custom classes. Switching may simplify your HTML structure.
-          </p>
-        </div>
-
-            {/* Footer */}
-            <div className="flex border-t gap-3 px-6 py-5">
-              <Button
-                variant={"outline"}
-                onClick={() => setShowModeWarning(false)}
-                className="flex-1 px-4 py-2 border rounded-md transition"
-              >
-                Stay in HTML
-              </Button>
-
-              <Button
-                variant={"destructive"}
-                onClick={() => {
-                  setHtmlMode(false);
-                  setShowModeWarning(false);
-                }}
-                className="flex-1 px-4 py-2 rounded-md transition"
-              >
-                Switch Anyway
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modals */}
+      <LinkDialog
+        open={linkOpen}
+        linkUrl={linkUrl}
+        onUrlChange={setLinkUrl}
+        onApply={applyLink}
+        onClose={() => setLinkOpen(false)}
+      />
+      <ImageDialog
+        open={showImageDialog}
+        imageUrl={imageUrl}
+        onUrlChange={setImageUrl}
+        onInsert={insertImage}
+        onClose={() => setShowImageDialog(false)}
+      />
+      <ModeWarningDialog
+        open={showModeWarning}
+        onStay={() => setShowModeWarning(false)}
+        onSwitch={() => {
+          setHtmlMode(false);
+          setShowModeWarning(false);
+        }}
+      />
     </div>
   );
-}
-
-/* ---------- Helpers ---------- */
-
-function TB({
-  icon,
-  children,
-  onClick,
-  active = false,
-  disabled = false,
-}: {
-  icon: React.ReactNode;
-  children?: React.ReactNode;
-  onClick: () => void;
-  active?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`p-2 rounded-md flex gap-2 border transition ${
-        active
-          ? "bg-primary text-secondry-foreground border border-btn-border"
-          : disabled
-            ? "opacity-50 cursor-not-allowed"
-            : "hover:bg-muted"
-      }`}
-    >
-      {icon}
-      {children && <span className="text-xs">{children}</span>}
-    </button>
-  );
-}
-
-function Divider() {
-  return <div className="w-px bg-border mx-1" />;
 }

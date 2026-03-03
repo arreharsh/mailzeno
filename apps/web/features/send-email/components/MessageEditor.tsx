@@ -1,26 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useTheme } from "next-themes";
 import AIGenerateModal from "./AIGenerateModal";
 import Editor from "@monaco-editor/react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
-import Underline from "@tiptap/extension-underline";
-import Placeholder from "@tiptap/extension-placeholder";
-import { motion } from "framer-motion";
-import {
-  Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  List,
-  ListOrdered,
-  Link2,
-  X,
-  AlertCircle,
-  Eye,
-} from "lucide-react";
+import RichEditor from "@/components/editor/RichEditor";
+import { AlertCircle, Eye, Sparkles, Wand2, FileCode2, FileText, Layout } from "lucide-react";
 
 type Props = {
   body: string;
@@ -48,75 +33,15 @@ export default function MessageEditor({
   const { theme } = useTheme();
   const editorRef = useRef<any>(null);
 
-  // Ai states
+  // AI states
   const [aiLoading, setAiLoading] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
-
-  // Link insert modal functions
-  const [linkOpen, setLinkOpen] = useState(false);
-  const [linkUrl, setLinkUrl] = useState("");
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-      }),
-      Underline,
-      Link.configure({
-        openOnClick: false,
-      }),
-      Placeholder.configure({
-        placeholder: "Start typing your email message...",
-      }),
-    ],
-    content: body,
-    immediatelyRender: false,
-    onUpdate: ({ editor }) => {
-      setBody(editor.getHTML());
-    },
-    editorProps: {
-      attributes: {
-        class: "tiptap-content focus:outline-none min-h-[300px] px-4 py-3",
-      },
-    },
-  });
-
-  useEffect(() => {
-    if (!htmlMode && editor && body !== editor.getHTML()) {
-      editor.commands.setContent(body);
-    }
-  }, [htmlMode, editor, body]);
 
   const formatHtml = () => {
     if (editorRef.current) {
       editorRef.current.getAction("editor.action.formatDocument").run();
     }
   };
-
-  const toggleBold = () => editor?.chain().focus().toggleBold().run();
-  const toggleItalic = () => editor?.chain().focus().toggleItalic().run();
-  const toggleUnderline = () => editor?.chain().focus().toggleUnderline().run();
-  const toggleBulletList = () =>
-    editor?.chain().focus().toggleBulletList().run();
-  const toggleOrderedList = () =>
-    editor?.chain().focus().toggleOrderedList().run();
-  const clearFormat = () =>
-    editor?.chain().focus().clearNodes().unsetAllMarks().run();
-
-  const insertLink = () => {
-    if (!linkUrl || !editor) return;
-    try {
-      new URL(linkUrl);
-    } catch {
-      alert("Please enter a valid URL");
-      return;
-    }
-    editor.chain().focus().setLink({ href: linkUrl }).run();
-    setLinkOpen(false);
-    setLinkUrl("");
-  };
-
-  const removeLink = () => editor?.chain().focus().unsetLink().run();
 
   // Handle AI buttons
   const handleAI = async (
@@ -155,16 +80,7 @@ export default function MessageEditor({
       }
 
       setSubject(subject);
-
-      if (htmlMode) {
-        setBody(content);
-      } else {
-        if (editor) {
-          editor.commands.setContent(content);
-        }
-        setBody(content);
-      }
-
+      setBody(content);
       setAiModalOpen(false);
     } catch (err) {
       console.error(err);
@@ -175,147 +91,72 @@ export default function MessageEditor({
   };
 
   return (
-    <div className="border rounded-xl p-4 space-y-6 bg-card shadow-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <label className="text-sm font-medium">
+    <div className="border rounded-xl overflow-hidden bg-card shadow-sm">
+      {/* ── Header Bar ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-5 py-3.5 border-b bg-muted/20 backdrop-blur-sm">
+        <label className="text-sm font-semibold flex items-center gap-2">
+          <FileText size={15} className="text-primary" />
           Message <span className="text-red-500">*</span>
         </label>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           {/* Choose Template */}
-          <button
-            type="button"
+          <ActionButton
             onClick={onChooseTemplate}
-            className="px-3 py-1.5 text-xs rounded-md border hover:bg-muted transition"
-          >
-            Choose Template
-          </button>
+            icon={<Layout size={13} />}
+            label="Template"
+          />
 
-          {/* HTML Toggle */}
-          <button
+          {/* HTML / Visual Toggle */}
+          <ActionButton
             onClick={onToggleMode}
-            className={`px-3 py-1.5 text-xs rounded-md border transition ${
-              htmlMode
-                ? "bg-primary border-btn-border border text-secondry-foregroune"
-                : "hover:bg-muted"
-            }`}
-            type="button"
-          >
-            {htmlMode ? "Editor Mode" : "HTML </>"}
-          </button>
+            icon={htmlMode ? <FileText size={13} /> : <FileCode2 size={13} />}
+            label={htmlMode ? "Visual" : "HTML"}
+            active={htmlMode}
+          />
 
+          {/* Format Code (HTML mode only) */}
           {htmlMode && (
-            <button
+            <ActionButton
               onClick={formatHtml}
-              className="px-3 py-1.5 text-xs rounded-md border hover:bg-muted transition"
-              type="button"
-            >
-              Format Code
-            </button>
-          )}
-
-          <button
-            onClick={onPreview}
-            className="px-3 py-1.5 text-xs rounded-md flex gap-1 border hover:bg-muted transition"
-            type="button"
-            disabled={!body || body === "<p></p>"}
-          >
-            Preview <Eye className="w-4 h-4" />
-          </button>
-
-          {htmlMode && (
-            <button
-              type="button"
-              onClick={() => setAiModalOpen(true)}
-              disabled={aiLoading}
-              className="px-3 py-1.5 text-xs rounded-md border hover:bg-muted transition"
-            >
-              {aiLoading ? "Thinking..." : "✦ AI Generate"}
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => handleAI("rewrite")}
-            disabled={aiLoading || !body}
-            className="px-3 py-1.5 text-xs rounded-md border hover:bg-muted transition"
-          >
-            {aiLoading ? "Thinking..." : "✦ AI Enhance"}
-          </button>
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      {!htmlMode && editor && (
-        <div className="flex flex-wrap items-center gap-1.5 border rounded-lg p-2 bg-muted/30">
-          <ToolbarButton
-            icon={<Bold size={16} />}
-            isActive={editor.isActive("bold")}
-            onClick={toggleBold}
-            label="Bold"
-          />
-          <ToolbarButton
-            icon={<Italic size={16} />}
-            isActive={editor.isActive("italic")}
-            onClick={toggleItalic}
-            label="Italic"
-          />
-          <ToolbarButton
-            icon={<UnderlineIcon size={16} />}
-            isActive={editor.isActive("underline")}
-            onClick={toggleUnderline}
-            label="Underline"
-          />
-
-          <div className="w-px h-6 bg-border mx-1" />
-
-          <ToolbarButton
-            icon={<List size={16} />}
-            isActive={editor.isActive("bulletList")}
-            onClick={toggleBulletList}
-            label="Bullet List"
-          />
-          <ToolbarButton
-            icon={<ListOrdered size={16} />}
-            isActive={editor.isActive("orderedList")}
-            onClick={toggleOrderedList}
-            label="Numbered List"
-          />
-
-          <div className="w-px h-6 bg-border mx-1" />
-
-          <ToolbarButton
-            icon={<Link2 size={16} />}
-            isActive={editor.isActive("link")}
-            onClick={() => setLinkOpen(true)}
-            label="Insert Link"
-          />
-
-          {editor.isActive("link") && (
-            <ToolbarButton
-              icon={<X size={16} />}
-              isActive={false}
-              onClick={removeLink}
-              label="Remove Link"
-              variant="danger"
+              icon={<FileCode2 size={13} />}
+              label="Format"
             />
           )}
 
-          <div className="w-px h-6 bg-border mx-1" />
+          {/* Preview */}
+          <ActionButton
+            onClick={onPreview}
+            icon={<Eye size={13} />}
+            label="Preview"
+            disabled={!body || body === "<p></p>"}
+          />
 
-          <button
-            type="button"
-            onClick={clearFormat}
-            className="px-2.5 py-1.5 text-xs rounded-md border border-border hover:bg-muted/50 text-red-500 hover:text-red-600 transition-all"
-          >
-            Clear
-          </button>
+          {/* AI Generate (HTML mode) */}
+          {htmlMode && (
+            <ActionButton
+              onClick={() => setAiModalOpen(true)}
+              disabled={aiLoading}
+              icon={<Sparkles size={13} />}
+              label={aiLoading ? "Thinking..." : "Generate"}
+              accent
+            />
+          )}
+
+          {/* AI Enhance */}
+          <ActionButton
+            onClick={() => handleAI("rewrite")}
+            disabled={aiLoading || !body}
+            icon={<Wand2 size={13} />}
+            label={aiLoading ? "Thinking..." : "Enhance"}
+            accent
+          />
         </div>
-      )}
+      </div>
 
-      {/* Editor */}
+      {/* ── Editor Area ── */}
       {htmlMode ? (
-        <div className="border rounded-lg overflow-hidden shadow-sm">
+        <div className="border-t">
           <Editor
             height="420px"
             defaultLanguage="html"
@@ -331,110 +172,40 @@ export default function MessageEditor({
               wordWrap: "on",
               scrollBeyondLastLine: false,
               automaticLayout: true,
+              lineNumbers: "on",
+              bracketPairColorization: { enabled: true },
+              padding: { top: 12, bottom: 12 },
             }}
           />
         </div>
       ) : (
         <div
-          className={`border rounded-lg overflow-hidden bg-background shadow-sm transition-all ${
-            error
-              ? "border-red-500 ring-1 ring-red-500/20"
-              : "border-border hover:border-primary/50"
-          }`}
+          className={`transition-all ${error
+              ? "ring-2 ring-red-500/20 ring-inset"
+              : ""
+            }`}
         >
-          <EditorContent editor={editor} />
+          <RichEditor
+            value={body}
+            onChange={setBody}
+            minHeight={350}
+            showToolbar={true}
+            autoFocus={false}
+          />
         </div>
       )}
 
+      {/* ── Error ── */}
       {error && (
-        <p className="text-xs text-red-500 flex items-center gap-1">
-          <AlertCircle size={12} />
-          {error}
-        </p>
-      )}
-
-      {/* Link Modal */}
-      {linkOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-card rounded-xl p-6 w-full max-w-md border shadow-2xl"
-          >
-            <h3 className="text-base font-semibold mb-4">Insert Link</h3>
-
-            <input
-              type="url"
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://example.com"
-              className="w-full border rounded-lg px-3 py-2.5 text-sm"
-            />
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setLinkOpen(false)}
-                className="px-4 py-2 text-sm border rounded-lg"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={insertLink}
-                className="px-4 py-2 text-sm bg-primary text-white rounded-lg"
-              >
-                Insert
-              </button>
-            </div>
-          </motion.div>
+        <div className="px-4 py-2.5 border-t bg-red-500/5">
+          <p className="text-xs text-red-500 flex items-center gap-1.5">
+            <AlertCircle size={13} />
+            {error}
+          </p>
         </div>
       )}
 
-      {/* TYPOGRAPHY STYLES */}
-      <style jsx global>{`
-        .tiptap-content p {
-          margin: 0.75rem 0;
-          line-height: 1.6;
-        }
-
-        .tiptap-content ul {
-          list-style-type: disc;
-          padding-left: 1.5rem;
-          margin: 1rem 0;
-        }
-
-        .tiptap-content ol {
-          list-style-type: decimal;
-          padding-left: 1.5rem;
-          margin: 1rem 0;
-        }
-
-        .tiptap-content li {
-          margin: 0.5rem 0;
-        }
-
-        .tiptap-content h1 {
-          font-size: 1.75rem;
-          font-weight: 700;
-          margin: 1.2rem 0 0.8rem;
-        }
-
-        .tiptap-content h2 {
-          font-size: 1.4rem;
-          font-weight: 600;
-          margin: 1rem 0 0.6rem;
-        }
-
-        .tiptap-content a {
-          color: #3b82f6;
-          text-decoration: underline;
-        }
-
-        .dark .tiptap-content a {
-          color: #60a5fa;
-        }
-      `}</style>
-
+      {/* ── AI Generate Modal ── */}
       <AIGenerateModal
         open={aiModalOpen}
         loading={aiLoading}
@@ -486,34 +257,42 @@ export default function MessageEditor({
   );
 }
 
-function ToolbarButton({
+/* ═══════════ Action Button ═══════════ */
+
+function ActionButton({
   icon,
-  isActive,
-  onClick,
   label,
-  variant = "default",
+  onClick,
+  disabled = false,
+  active = false,
+  accent = false,
 }: {
   icon: React.ReactNode;
-  isActive: boolean;
-  onClick: () => void;
   label: string;
-  variant?: "default" | "danger";
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  accent?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`p-2 rounded-md border transition-all ${
-        isActive
-          ? "bg-primary/10 border-primary text-primary shadow-sm"
-          : variant === "danger"
-            ? "border-border hover:bg-red-50 text-red-500"
-            : "border-border hover:bg-muted/50"
-      }`}
-      aria-label={label}
-      title={label}
+      disabled={disabled}
+      className={`
+        flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg
+        transition-all duration-200 border
+        disabled:opacity-40 disabled:cursor-not-allowed
+        ${active
+          ? "bg-primary text-secondry-foreground border-btn-border shadow-sm"
+          : accent
+            ? "border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50"
+            : "border-border/60 hover:bg-muted hover:border-border"
+        }
+      `}
     >
       {icon}
+      <span className="hidden sm:inline">{label}</span>
     </button>
   );
 }

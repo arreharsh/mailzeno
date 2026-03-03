@@ -21,16 +21,16 @@ export function Sidebar({
   const pathname = usePathname();
 
   useEffect(() => {
-  if (isOpen) {
-    document.body.style.overflow = "hidden";
-  } else {
-    document.body.style.overflow = "";
-  }
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
 
-  return () => {
-    document.body.style.overflow = "";
-  };
-}, [isOpen]);
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
   const renderGroup = (items: typeof mainNav) =>
     items.map((item) => {
@@ -138,7 +138,7 @@ function SidebarContent({
       <div className="border-b" />
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-4 py-6">
         <nav className="flex flex-col gap-8">
           <div className="flex flex-col gap-1">
             {renderGroup(mainNav)}

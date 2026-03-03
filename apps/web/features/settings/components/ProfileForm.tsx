@@ -1,18 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateProfile } from "../services/settings.service";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 
 export function ProfileForm() {
   const { toast } = useToast();
-  const router = useRouter();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -46,20 +44,10 @@ export function ProfileForm() {
     }
   };
 
-  const BackButton = (
-    <button
-      onClick={() => router.back()}
-      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
-    >
-      <ArrowLeft size={16} />
-      Back
-    </button>
-  );
-
   if (initialLoading) {
     return (
       <div className="space-y-4">
-        {BackButton}
+        <BackButton />
         <Card>
           <CardHeader>
             <Skeleton className="h-5 w-40" />
@@ -88,7 +76,7 @@ export function ProfileForm() {
 
   return (
     <div className="space-y-4">
-      {BackButton}
+      <BackButton />
       <Card>
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>

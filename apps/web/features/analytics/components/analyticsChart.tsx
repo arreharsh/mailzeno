@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMemo, useState, useEffect } from "react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
 
 /* ---------- Normalize DB Aggregated Data ---------- */
 
@@ -69,49 +69,53 @@ export default function AnalyticsChart({
   const trend =
     yesterday > 0 ? Math.round(((today - yesterday) / yesterday) * 100) : 0;
 
+  const TrendIcon = trend >= 0 ? ArrowUpRight : ArrowDownRight;
+
   return (
     <div>
-      <Card className="rounded-2xl border shadow-sm bg-card">
-        <CardContent className="p-4 sm:p-6">
+      <Card className="rounded-2xl border border-border/60 shadow-sm bg-card">
+        <CardContent className="p-5 sm:p-6">
           {/* Header */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Email Activity ({range} Days)
-              </p>
-
-              <p className="text-2xl sm:text-3xl font-bold">{total}</p>
-
-              <div
-                className={`flex items-center gap-1 text-xs sm:text-sm font-medium mt-1 ${
-                  trend >= 0 ? "text-emerald-500" : "text-red-500"
-                }`}
-              >
-                <ArrowUpRight className="h-4 w-4" />
-                {trend >= 0 ? "+" : ""}
-                {trend}% from yesterday
+            <div className="flex items-start gap-3.5">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 shrink-0 mt-0.5">
+                <Activity className="w-[18px] h-[18px] text-primary" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                  Email Activity ({range} Days)
+                </p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">
+                  {total.toLocaleString()}
+                </p>
+                <div
+                  className={`flex items-center gap-1 text-xs sm:text-sm font-medium mt-0.5 ${trend >= 0 ? "text-emerald-500" : "text-red-500"
+                    }`}
+                >
+                  <TrendIcon className="h-3.5 w-3.5" />
+                  {trend >= 0 ? "+" : ""}
+                  {trend}% from yesterday
+                </div>
               </div>
             </div>
 
             {/* Toggle */}
-            <div className="flex bg-muted rounded-lg p-1 w-fit">
+            <div className="flex bg-muted/60 rounded-xl p-1 w-fit border border-border/40">
               <button
                 onClick={() => setRange(7)}
-                className={`px-3 py-1 text-xs sm:text-sm rounded-md transition ${
-                  range === 7
-                    ? "bg-background shadow-sm"
-                    : "text-muted-foreground"
-                }`}
+                className={`px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all ${range === 7
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 7D
               </button>
               <button
                 onClick={() => setRange(30)}
-                className={`px-3 py-1 text-xs sm:text-sm rounded-md transition ${
-                  range === 30
-                    ? "bg-background shadow-sm"
-                    : "text-muted-foreground"
-                }`}
+                className={`px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all ${range === 30
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 30D
               </button>
@@ -119,15 +123,18 @@ export default function AnalyticsChart({
           </div>
 
           {/* Chart */}
-          <div className="h-[220px] sm:h-[260px]">
+          <div className="h-[220px] sm:h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
+              <AreaChart
+                data={data}
+                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="colorEmails" x1="0" y1="0" x2="0" y2="1">
                     <stop
                       offset="5%"
                       stopColor={primaryColor}
-                      stopOpacity={0.35}
+                      stopOpacity={0.3}
                     />
                     <stop
                       offset="95%"
@@ -139,8 +146,9 @@ export default function AnalyticsChart({
 
                 <CartesianGrid
                   stroke="currentColor"
-                  strokeOpacity={0.08}
+                  strokeOpacity={0.06}
                   vertical={false}
+                  strokeDasharray="4 4"
                 />
 
                 <XAxis
@@ -148,6 +156,7 @@ export default function AnalyticsChart({
                   tick={{ fontSize: 11 }}
                   tickLine={false}
                   axisLine={false}
+                  tickMargin={8}
                 />
 
                 <YAxis
@@ -155,6 +164,7 @@ export default function AnalyticsChart({
                   tick={{ fontSize: 11 }}
                   tickLine={false}
                   axisLine={false}
+                  tickMargin={4}
                 />
 
                 <Tooltip
@@ -163,6 +173,14 @@ export default function AnalyticsChart({
                     border: "1px solid var(--border)",
                     borderRadius: "12px",
                     fontSize: "12px",
+                    padding: "8px 14px",
+                    boxShadow:
+                      "0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1)",
+                  }}
+                  cursor={{
+                    stroke: "var(--border)",
+                    strokeWidth: 1,
+                    strokeDasharray: "4 4",
                   }}
                 />
 
@@ -172,7 +190,11 @@ export default function AnalyticsChart({
                   stroke={primaryColor}
                   strokeWidth={2.5}
                   fill="url(#colorEmails)"
-                  activeDot={{ r: 6 }}
+                  activeDot={{
+                    r: 5,
+                    strokeWidth: 2,
+                    stroke: "var(--background)",
+                  }}
                 />
               </AreaChart>
             </ResponsiveContainer>

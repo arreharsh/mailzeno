@@ -1,6 +1,7 @@
 "use client";
 
-import { Plus, ArrowLeft } from "lucide-react";
+import { Plus } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import SMTPCard from "@/features/smtp/components/SMTPCard";
 import SMTPSkeleton from "@/features/smtp/components/SMTPSkeleton";
 import { useSMTP } from "@/features/smtp/hooks/useSMTP";
@@ -13,13 +14,7 @@ export default function SMTPPage() {
   return (
     <div className="md:p-6 space-y-8">
 
-      <button
-        onClick={() => router.back()}
-        className="flex items-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition"
-      >
-        <ArrowLeft size={16} />
-        Back
-      </button>
+      <BackButton />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

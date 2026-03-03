@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { motion } from "framer-motion";
 import ProviderSelector from "@/features/smtp/components/ProviderSelector";
 import SMTPForm from "@/features/smtp/components/SMTPForm";
@@ -13,13 +13,7 @@ export default function NewSMTPPage() {
 
   return (
     <div className="px-4 md:px-8 py-6">
-      <button
-        onClick={() => router.back()}
-        className="flex items-center gap-2 pb-10 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition"
-      >
-        <ArrowLeft size={16} />
-        Back
-      </button>
+      <BackButton className="pb-10" />
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}

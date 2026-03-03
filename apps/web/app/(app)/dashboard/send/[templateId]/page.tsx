@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, ArrowLeft, Send, AlertCircle } from "lucide-react";
+import { Loader2, Send, AlertCircle } from "lucide-react";
 import { starterTemplates } from "@/lib/templates/starter-templates";
 import { useSendEmail } from "@/features/send-email/hooks/useSendEmail";
 import EmailFormSection from "@/features/send-email/components/EmailFormSection";
@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
+import { BackButton } from "@/components/ui/back-button";
 
 export default function SendEmailPage() {
   const params = useParams();
@@ -42,45 +43,45 @@ export default function SendEmailPage() {
   const router = useRouter();
 
   useEffect(() => {
-  if (!templateId) return;
+    if (!templateId) return;
 
-  // Check in starterTemplates (local JSON)
-  const starter = starterTemplates.find(
-    (t) => t.id === templateId
-  );
+    // Check in starterTemplates (local JSON)
+    const starter = starterTemplates.find(
+      (t) => t.id === templateId
+    );
 
-  if (starter) {
-    setForm((prev) => ({
-      ...prev,
-      subject: starter.subject,
-      body: starter.body,
-    }));
-    return; // stop here
-  }
-
-  // Otherwise fetch from API (user template)
-  const fetchTemplate = async () => {
-    try {
-      const res = await fetch(`/api/templates/${templateId}`);
-      const result = await res.json();
-
-      if (!res.ok) return;
-
-      const template = result.data ?? result;
-
+    if (starter) {
       setForm((prev) => ({
         ...prev,
-        subject: template.subject || "",
-        body: template.body || "",
+        subject: starter.subject,
+        body: starter.body,
       }));
-    } catch (err) {
-      console.error("Failed to load template", err);
+      return; // stop here
     }
-  };
 
-  fetchTemplate();
+    // Otherwise fetch from API (user template)
+    const fetchTemplate = async () => {
+      try {
+        const res = await fetch(`/api/templates/${templateId}`);
+        const result = await res.json();
 
-}, [templateId, setForm]);
+        if (!res.ok) return;
+
+        const template = result.data ?? result;
+
+        setForm((prev) => ({
+          ...prev,
+          subject: template.subject || "",
+          body: template.body || "",
+        }));
+      } catch (err) {
+        console.error("Failed to load template", err);
+      }
+    };
+
+    fetchTemplate();
+
+  }, [templateId, setForm]);
 
   if (pageLoading) {
     return <SendEmailPageSkeleton />;
@@ -124,13 +125,7 @@ export default function SendEmailPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-      <button
-        onClick={() => router.back()}
-        className="flex items-center pt-0 gap-2 pb-4 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition"
-      >
-        <ArrowLeft size={16} />
-        Back
-      </button>
+      <BackButton className="pb-4" />
       <div>
         <h1 className="text-2xl font-semibold">Send Email</h1>
         <p className="text-sm text-muted-foreground">
