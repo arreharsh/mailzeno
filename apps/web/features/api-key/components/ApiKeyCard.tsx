@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function ApiKeyCard({ data, onRefresh }: Props) {
-  const maskedKey = `${data.prefix}${"•".repeat(32)}`
+  const maskedKey = `${data.prefix}${"*".repeat(9)}`
 
   return (
     <Card className="rounded-2xl border border-border/60 overflow-hidden">

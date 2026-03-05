@@ -14,7 +14,7 @@ export default function ApiPage() {
 
   return (
     <div className="w-full min-h-screen overflow-x-hidden">
-      <div className="px-4 sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto">
+      <div className="sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto">
         {/* Back button */}
         <BackButton className="pb-4" />
 
