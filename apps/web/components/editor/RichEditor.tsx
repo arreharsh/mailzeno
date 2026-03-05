@@ -208,13 +208,7 @@ export default function RichEditor({
 
   return (
     <div className={wrapperClass}>
-      {/* Dirty indicator */}
-      {dirty && (
-        <div className="absolute top-2 right-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-          Unsaved changes
-        </div>
-      )}
-
+     
       {/* Toolbar */}
       {!readOnly && showToolbar && (
         <div className="relative z-11 border-b bg-muted/20 backdrop-blur-sm shrink-0">
