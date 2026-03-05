@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { ZodError } from "zod";
 import { LoginSchema } from "@/lib/validators/auth";
 import type { LoginInput } from "@/lib/validators/auth";
 
@@ -71,11 +72,19 @@ async function onSubmit(e: React.FormEvent) {
 
     
   } catch (error) {
-    toast({
-      title: "Error",
-      description: error instanceof Error ? error.message : "Login failed",
-      variant: "destructive",
-    });
+    if (error instanceof ZodError) {
+      toast({
+        title: "Validation Error",
+        description: error.errors[0]?.message || "Invalid input",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Login failed",
+        variant: "destructive",
+      });
+    }
   } finally {
     setIsLoading(false);
   }

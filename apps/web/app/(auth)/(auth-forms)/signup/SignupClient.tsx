@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ZodError } from "zod";
 import { useToast } from "@/components/ui/use-toast";
 import { SignupSchema } from "@/lib/validators/auth";
 import type { SignupInput } from "@/lib/validators/auth";
@@ -23,7 +24,7 @@ export default function SignupPage() {
   const redirectTo = searchParams.get("redirect") || "/dashboard";
   const { toast } = useToast();
 
-  // ✅ GitHub OAuth (same as login)
+
   async function signInWithGithub() {
     await supabase.auth.signInWithOAuth({
       provider: "github",
@@ -34,8 +35,6 @@ export default function SignupPage() {
       },
     });
   }
-
-  // ✅ SAME LISTENER FLOW AS LOGIN
   useEffect(() => {
     const {
       data: { subscription },
@@ -70,16 +69,20 @@ export default function SignupPage() {
         description: "If email verification is required, check your inbox.",
       });
 
-      // ❌ No router.push here
-      // Listener handle karega session aate hi
-
     } catch (error) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Signup failed",
-        variant: "destructive",
-      });
+      if (error instanceof ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0]?.message || "Invalid input",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Signup failed",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
