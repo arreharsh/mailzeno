@@ -26,7 +26,7 @@ export default async function LogsPage({
   const { logs, total, pageSize } = await getLogs(user.id, page, status);
 
   return (
-    <div className="px-4 sm:px-6 py-6 sm:py-10 max-w-6xl mx-auto w-full space-y-6 sm:space-y-8">
+    <div className="sm:px-6 py-6 sm:py-10 max-w-6xl mx-auto w-full space-y-6 sm:space-y-8">
       <BackButton className="pb-0" />
       <LogsHeader currentStatus={status} total={total} />
       <LogsView logs={logs} />
