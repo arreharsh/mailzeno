@@ -36,13 +36,13 @@ export const SMTP_PROVIDERS: ProviderConfig[] = [
   {
     id: "zoho",
     label: "Zoho",
-    host: "smtp.zoho.com",
+    host: "smtp.zoho.in",
     port: 465,
     secure: true,
     logo: "/providers/zoho.svg",
   },
    {
-    id: "Yahoo",
+    id: "yahoo",
     label: "Yahoo",
     host: "smtp.mail.yahoo.com",
     port: 465,

@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SMTP_PROVIDERS } from "../config/providers";
 import { useToast } from "@/components/ui/use-toast";
-import { Shield } from "lucide-react";
-import {Button} from "@/components/ui/button"
+import { Check, ChevronDown, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RegionSelect } from "./RegionSelect";
 
 interface Props {
   provider: string;
@@ -15,8 +16,13 @@ export default function SMTPForm({ provider }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [region, setRegion] = useState("ap-south-1");
 
   const config = SMTP_PROVIDERS.find((p) => p.id === provider);
+
+ 
+
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,8 +32,14 @@ export default function SMTPForm({ provider }: Props) {
 
     const body = {
       name: form.get("name"),
-      host: provider === "custom" ? form.get("host") : config?.host,
-      port: provider === "custom" ? form.get("port") : config?.port,
+      host:
+        provider === "custom"
+          ? form.get("host")
+          : provider === "ses"
+            ? `email-smtp.${region}.amazonaws.com`
+            : config?.host,
+
+      port: provider === "custom" ? Number(form.get("port")) : config?.port,
       username: form.get("username"),
       password: form.get("password"),
       from_email: form.get("from_email"),
@@ -83,13 +95,24 @@ export default function SMTPForm({ provider }: Props) {
         </div>
       )}
 
+      {provider === "ses" && (
+        <FormField label="AWS Region">
+          <RegionSelect value={region} onChange={setRegion} />
+        </FormField>
+      )}
+
       <div className="grid md:grid-cols-2 gap-4">
         <FormField label="User Email">
           <input name="username" required className="smtp-input" />
         </FormField>
 
         <FormField label="App Password">
-          <input type="password" name="password" required className="smtp-input" />
+          <input
+            type="password"
+            name="password"
+            required
+            className="smtp-input"
+          />
         </FormField>
       </div>
 
@@ -120,7 +143,13 @@ export default function SMTPForm({ provider }: Props) {
   );
 }
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-medium">{label}</label>
@@ -128,3 +157,5 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
     </div>
   );
 }
+
+

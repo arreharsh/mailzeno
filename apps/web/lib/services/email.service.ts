@@ -85,14 +85,6 @@ export async function sendEmailService(input: SendEmailInput) {
       }
     }
 
-    // For security, enforce that the "from" address matches the SMTP username
-    if (input.from.toLowerCase() !== smtp.username.toLowerCase()) {
-      return {
-        success: false,
-        error: "From address must match SMTP account",
-      };
-    }
-
     validateRecipients(input.to);
 
     // Template processing
@@ -182,9 +174,11 @@ export async function sendEmailService(input: SendEmailInput) {
     };
 
     // Send the email
+    const from = `${smtp.from_name || "MailZeno"} <${smtp.username}>`;
+
     const result = await sendEmail(smtpConfig, {
       type: "raw",
-      from: input.from,
+      from,
       to: input.to,
       subject: finalSubject,
       html: finalHtml,
@@ -217,7 +211,6 @@ export async function sendEmailService(input: SendEmailInput) {
       message_id: result.messageId,
       retention_expires_at: retentionExpiresAt.toISOString(),
     });
-
 
     return {
       success: true,
