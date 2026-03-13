@@ -12,7 +12,7 @@ import { useState } from "react";
 interface Props {
   smtp: SMTPAccount;
   processingId: string | null;
-  onToggle: (id: string, current: boolean) => void;
+  onToggle: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -100,7 +100,7 @@ export default function SMTPCard({
           <button
             type="button"
             disabled={isProcessing}
-            onClick={() => onToggle(smtp.id, smtp.is_default)}
+            onClick={() => onToggle(smtp.id)}
             className={`flex items-center gap-2 px-3 py-2 rounded-md border text-sm transition ${
               smtp.is_default
                 ? "bg-green-500/10 text-green-600 border-green-500/20"
@@ -200,7 +200,7 @@ export default function SMTPCard({
                 type="button"
                 disabled={isProcessing}
                 onClick={() => {
-                  onToggle(smtp.id, smtp.is_default);
+                  onToggle(smtp.id);
                   setPcModalOpen(false);
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 rounded-md border py-2 text-sm transition ${
@@ -303,7 +303,7 @@ export default function SMTPCard({
                 type="button"
                 disabled={isProcessing}
                 onClick={() => {
-                  onToggle(smtp.id, smtp.is_default);
+                  onToggle(smtp.id);
                   setMobileDrawerOpen(false);
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 rounded-md border py-2 text-sm transition ${

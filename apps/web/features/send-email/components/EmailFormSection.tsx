@@ -14,7 +14,7 @@ import {
 type SMTP = {
   id: string;
   name: string;
-  is_active: boolean;
+  is_default: boolean;
 };
 
 type Props = {
@@ -77,7 +77,7 @@ export default function EmailFormSection({
               <SelectItem key={s.id} value={s.id}>
                 <div className="flex items-center justify-between w-full">
                   <span>{s.name}</span>
-                  {s.is_active && (
+                  {s.is_default && (
                     <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-600 rounded-full border border-border ml-2">
                       Default
                     </span>

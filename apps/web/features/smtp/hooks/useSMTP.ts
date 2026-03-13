@@ -37,13 +37,13 @@ export function useSMTP() {
     try {
       setProcessingId(id);
 
-      await updateSMTP(id, { is_active: !current });
+      await updateSMTP(id, { is_default: !current });
 
       setAccounts((prev) =>
         prev.map((acc) =>
           acc.id === id
-            ? { ...acc, is_active: !current }
-            : { ...acc, is_active: false }
+            ? { ...acc, is_default: !current }
+            : { ...acc, is_default: false }
         )
       );
     } finally {

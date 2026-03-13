@@ -8,6 +8,7 @@ type SMTP = {
   id: string;
   name: string;
   is_active: boolean;
+  is_default: boolean;
 };
 
 type Template = {
