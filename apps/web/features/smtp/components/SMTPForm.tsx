@@ -17,12 +17,9 @@ export default function SMTPForm({ provider }: Props) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [region, setRegion] = useState("ap-south-1");
+  const [username, setUsername] = useState("");
 
   const config = SMTP_PROVIDERS.find((p) => p.id === provider);
-
- 
-
-
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -103,7 +100,13 @@ export default function SMTPForm({ provider }: Props) {
 
       <div className="grid md:grid-cols-2 gap-4">
         <FormField label="User Email">
-          <input name="username" required className="smtp-input" />
+          <input
+            name="username"
+            required
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="smtp-input"
+          />
         </FormField>
 
         <FormField label="App Password">
@@ -118,7 +121,11 @@ export default function SMTPForm({ provider }: Props) {
 
       <div className="grid md:grid-cols-2 gap-4">
         <FormField label="From Email">
-          <input name="from_email" required className="smtp-input" />
+          <input
+            value={username}
+            disabled
+            className="smtp-input opacity-60 cursor-not-allowed"
+          />
         </FormField>
 
         <FormField label="From Name">
@@ -157,5 +164,3 @@ function FormField({
     </div>
   );
 }
-
-
